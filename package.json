@@ -1,0 +1,22 @@
+{
+  "name": "fit",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "viewer": "bun run src/viewer.tsx"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@duckdb/node-api": "^1.4.4-r.1",
+    "@opentui/core": "^0.1.81",
+    "@opentui/react": "^0.1.81",
+    "fit-file-parser": "^2.3.3",
+    "react": "^19.2.4"
+  }
+}
