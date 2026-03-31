@@ -43,10 +43,50 @@ function toTS(val: Date | string | number | undefined | null): DuckDBTimestampVa
   return new DuckDBTimestampValue(BigInt(d.getTime()) * 1000n)
 }
 
+// ─── FIT file parser (no DB writes) ──────────────────────────────────────────
+
+export interface FitFileSummary {
+  sessions: number
+  laps: number
+  records: number
+  sport: string | null
+}
+
+export async function parseFitFile(fitPath: string): Promise<FitFileSummary> {
+  const buffer = await Bun.file(fitPath).arrayBuffer()
+  const parser = new FitParser({
+    force: true,
+    speedUnit: "km/h",
+    temperatureUnit: "celsius",
+    elapsedRecordField: true,
+    mode: "cascade",
+  })
+  const fitData = await (parser as any).parseAsync(Buffer.from(buffer))
+  const activity = fitData.activity
+  if (!activity) throw new Error("No activity found in FIT file")
+  const sessions: any[] = activity.sessions ?? []
+  if (sessions.length === 0) throw new Error("No sessions found in FIT file")
+  let laps = 0
+  let records = 0
+  for (const sess of sessions) {
+    const sessLaps: any[] = sess.laps ?? []
+    laps += sessLaps.length
+    const seen = new Set<number>()
+    for (const lap of sessLaps) {
+      for (const rec of lap.records ?? []) {
+        const ms = new Date(rec.timestamp).getTime()
+        if (!isNaN(ms) && !seen.has(ms)) seen.add(ms)
+      }
+    }
+    records += seen.size
+  }
+  return { sessions: sessions.length, laps, records, sport: sessions[0].sport ?? null }
+}
+
 // ─── Per-file ingest (connection provided by caller) ─────────────────────────
 
 /** Returns a summary string on success, null if already imported, throws on error. */
-async function ingestFile(conn: DuckDBConnection, fitPath: string): Promise<string | null> {
+export async function ingestFile(conn: DuckDBConnection, fitPath: string): Promise<string | null> {
   const resolved = path.resolve(process.cwd(), fitPath)
   const fileName = path.basename(resolved)
 
@@ -301,52 +341,54 @@ function collectFitFiles(args: string[]): string[] {
 
 // ─── CLI entry ────────────────────────────────────────────────────────────────
 
-const args = process.argv.slice(2)
-if (args.length === 0) {
-  console.error("Usage: bun run src/db/ingest.ts <file.fit> [file2.fit ...] [dir/]")
-  process.exit(1)
-}
-
-const files = collectFitFiles(args)
-if (files.length === 0) {
-  console.error("No .fit files found.")
-  process.exit(1)
-}
-
-console.log(`Found ${files.length} file(s). Opening database...`)
-const instance = await DuckDBInstance.create(DB_PATH)
-await setupDatabase(instance)
-const conn = await instance.connect()
-
-let imported = 0
-let skipped = 0
-const errors: { file: string; error: string }[] = []
-
-for (let i = 0; i < files.length; i++) {
-  const file = files[i]
-  const label = `[${i + 1}/${files.length}] ${path.basename(file)}`
-  process.stdout.write(`${label} ... `)
-  try {
-    const summary = await ingestFile(conn, file)
-    if (summary === null || summary.startsWith("SKIP")) {
-      console.log(summary ?? "already imported")
-      skipped++
-    } else {
-      console.log(summary)
-      imported++
-    }
-  } catch (err: any) {
-    console.log(`ERROR: ${err.message}`)
-    errors.push({ file: path.basename(file), error: err.message })
+if (import.meta.main) {
+  const args = process.argv.slice(2)
+  if (args.length === 0) {
+    console.error("Usage: bun run src/db/ingest.ts <file.fit> [file2.fit ...] [dir/]")
+    process.exit(1)
   }
+
+  const files = collectFitFiles(args)
+  if (files.length === 0) {
+    console.error("No .fit files found.")
+    process.exit(1)
+  }
+
+  console.log(`Found ${files.length} file(s). Opening database...`)
+  const instance = await DuckDBInstance.create(DB_PATH)
+  await setupDatabase(instance)
+  const conn = await instance.connect()
+
+  let imported = 0
+  let skipped = 0
+  const errors: { file: string; error: string }[] = []
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
+    const label = `[${i + 1}/${files.length}] ${path.basename(file)}`
+    process.stdout.write(`${label} ... `)
+    try {
+      const summary = await ingestFile(conn, file)
+      if (summary === null || summary.startsWith("SKIP")) {
+        console.log(summary ?? "already imported")
+        skipped++
+      } else {
+        console.log(summary)
+        imported++
+      }
+    } catch (err: any) {
+      console.log(`ERROR: ${err.message}`)
+      errors.push({ file: path.basename(file), error: err.message })
+    }
+  }
+
+  conn.closeSync()
+  instance.closeSync()
+
+  console.log(`\nDone. ${imported} imported, ${skipped} skipped, ${errors.length} errors.`)
+  if (errors.length > 0) {
+    for (const e of errors) console.error(`  ✗ ${e.file}: ${e.error}`)
+  }
+
+  setImmediate(() => process.exit(errors.length > 0 ? 1 : 0))
 }
-
-conn.closeSync()
-instance.closeSync()
-
-console.log(`\nDone. ${imported} imported, ${skipped} skipped, ${errors.length} errors.`)
-if (errors.length > 0) {
-  for (const e of errors) console.error(`  ✗ ${e.file}: ${e.error}`)
-}
-
-setImmediate(() => process.exit(errors.length > 0 ? 1 : 0))
