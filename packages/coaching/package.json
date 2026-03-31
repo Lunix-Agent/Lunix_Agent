@@ -7,7 +7,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "fit-tui": "workspace:*",
+    "fitui": "workspace:*",
     "@duckdb/node-api": "^1.4.4-r.1"
   },
   "devDependencies": {

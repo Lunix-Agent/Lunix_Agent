@@ -1,5 +1,5 @@
 import { DuckDBInstance } from "@duckdb/node-api"
-import { setupDatabase as setupActivityDatabase } from "fit-tui"
+import { setupDatabase as setupActivityDatabase } from "fitui"
 
 export async function setupDatabase(instance: DuckDBInstance): Promise<void> {
   await setupActivityDatabase(instance)
