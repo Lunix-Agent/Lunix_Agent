@@ -44,6 +44,9 @@ export async function dryRunIngest(conn: DuckDBConnection, filePath: string): Pr
 }
 
 export async function runIngest(conn: DuckDBConnection, filePath: string): Promise<IngestResult> {
+  const pathError = validatePath(filePath)
+  if (pathError) return { status: 'error', file: filePath, error: pathError }
+
   const resolved = path.resolve(process.cwd(), filePath)
   try {
     const summary = await ingestFile(conn, resolved)
