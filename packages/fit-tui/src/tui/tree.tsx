@@ -1,3 +1,4 @@
+// @ts-nocheck — OpenTUI JSX types don't match standard React IntrinsicAttributes
 import { createCliRenderer } from "@opentui/core"
 import { createRoot, useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/react"
 import { useState, useMemo } from "react"
@@ -463,26 +464,36 @@ function App({ fitData, filename }: {
   )
 }
 
-// ─── Bootstrap ───────────────────────────────────────────────────────────────
+// ─── Render entry point ─────────────────────────────────────────────────────
 
-const filePath = process.argv[2]
-if (!filePath) {
-  console.error("Usage: bun run src/tree.tsx <file.fit>")
-  process.exit(1)
+export async function renderTree(filePath: string): Promise<void> {
+  const resolved = path.resolve(process.cwd(), filePath)
+  const buffer = await Bun.file(resolved).arrayBuffer()
+
+  const parser = new FitParser({
+    force: true,
+    speedUnit: "km/h",
+    temperatureUnit: "celsius",
+    elapsedRecordField: true,
+    mode: "cascade",
+  })
+
+  const fitData = await parser.parseAsync(Buffer.from(buffer)) as Record<string, unknown>
+
+  const renderer = await createCliRenderer({ exitOnCtrlC: true })
+  createRoot(renderer).render(<App fitData={fitData} filename={path.basename(resolved)} />)
 }
 
-const resolved = path.resolve(process.cwd(), filePath)
-const buffer = await Bun.file(resolved).arrayBuffer()
+// ─── Standalone entry ───────────────────────────────────────────────────────
 
-const parser = new FitParser({
-  force: true,
-  speedUnit: "km/h",
-  temperatureUnit: "celsius",
-  elapsedRecordField: true,
-  mode: "cascade",
-})
-
-const fitData = await parser.parseAsync(Buffer.from(buffer)) as Record<string, unknown>
-
-const renderer = await createCliRenderer({ exitOnCtrlC: true })
-createRoot(renderer).render(<App fitData={fitData} filename={path.basename(resolved)} />)
+if (import.meta.main) {
+  const filePath = process.argv[2]
+  if (!filePath) {
+    console.error("Usage: bun run src/tui/tree.tsx <file.fit>")
+    process.exit(1)
+  }
+  renderTree(filePath).catch((err) => {
+    console.error(err.message)
+    process.exit(1)
+  })
+}

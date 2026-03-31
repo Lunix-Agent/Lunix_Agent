@@ -6,9 +6,10 @@
  * TTY context → human-readable output
  *
  * Commands:
- *   fitui schema                          Print DB schema as JSON
- *   fitui query --sql "<SQL>"             Execute a SQL query, return rows as JSON
- *   fitui ingest <file.fit> [--dry-run]   Ingest a FIT file (or validate with --dry-run)
+ *   fitui schema                                    Print DB schema as JSON
+ *   fitui query --sql "<SQL>"                       Execute a SQL query, return rows as JSON
+ *   fitui ingest <file.fit> [--dry-run]             Ingest a FIT file (or validate with --dry-run)
+ *   fitui view <file.fit> [--mode laps|raw|tree|protocol]  Interactive TUI viewer (TTY only)
  */
 
 import path from "node:path"
@@ -17,6 +18,7 @@ import { setupDatabase } from "./db/schema.ts"
 import { getSchema } from "./cli/schema.ts"
 import { executeQuery } from "./cli/query.ts"
 import { dryRunIngest, runIngest } from "./cli/ingest.ts"
+import { launchViewer, validateViewArgs } from "./cli/view.ts"
 
 const IS_TTY = Boolean(process.stdout.isTTY)
 
@@ -55,73 +57,95 @@ if (!command || command === "--help" || command === "-h") {
     "  --db <path>     Path to DuckDB database (default: $FIT_DB_PATH or ./fit.duckdb)",
     "",
     "Commands:",
-    "  fitui schema                          Print DB schema as JSON",
-    "  fitui query --sql \"<SQL>\"             Execute a SQL query",
-    "  fitui ingest <file.fit> [--dry-run]   Ingest or validate a FIT file",
+    "  fitui schema                                    Print DB schema as JSON",
+    "  fitui query --sql \"<SQL>\"                       Execute a SQL query",
+    "  fitui ingest <file.fit> [--dry-run]             Ingest or validate a FIT file",
+    "  fitui view <file.fit> [--mode laps|raw|tree|protocol]  Interactive TUI (TTY only)",
     "",
     "Non-TTY contexts always receive JSON output.",
   ].join("\n") + "\n")
   process.exit(0)
 }
 
-// ─── Open DB ─────────────────────────────────────────────────────────────────
+// ─── view command (no DB needed) ─────────────────────────────────────────────
 
-const instance = await DuckDBInstance.create(DB_PATH)
-await setupDatabase(instance)
-const conn = await instance.connect()
-
-function close() {
-  conn.closeSync()
-  instance.closeSync()
-}
-
-// ─── Commands ────────────────────────────────────────────────────────────────
-
-if (command === "schema") {
-  const schema = await getSchema(conn)
-  out(schema)
-  close()
-  setImmediate(() => process.exit(0))
-
-} else if (command === "query") {
-  const sqlIdx = rest.indexOf("--sql")
-  const sql = sqlIdx !== -1 ? rest[sqlIdx + 1] : undefined
-  if (!sql) {
-    close()
-    errorOut("MISSING_ARG", "query requires --sql \"<SQL>\"")
-  }
-  try {
-    const rows = await executeQuery(conn, sql!)
-    out(rows)
-  } catch (err: any) {
-    close()
-    errorOut(err.code ?? "QUERY_FAILED", err.message)
-  }
-  close()
-  setImmediate(() => process.exit(0))
-
-} else if (command === "ingest") {
+if (command === "view") {
   const filePath = rest.find(a => !a.startsWith("--"))
-  const dryRun = rest.includes("--dry-run")
+  const modeIdx = rest.indexOf("--mode")
+  const mode = (modeIdx !== -1 && rest[modeIdx + 1]) ? rest[modeIdx + 1]! : "laps"
 
-  if (!filePath) {
-    close()
-    errorOut("MISSING_ARG", "ingest requires a file path")
+  const validationError = validateViewArgs(filePath, mode)
+  if (validationError) {
+    errorOut(validationError.code, validationError.message)
   }
 
-  if (dryRun) {
-    const result = await dryRunIngest(conn, filePath!)
-    out(result)
-    close()
-    setImmediate(() => process.exit(result.valid ? 0 : 1))
-  } else {
-    const result = await runIngest(conn, filePath!)
-    out(result)
-    close()
-    setImmediate(() => process.exit(result.status === "error" ? 1 : 0))
+  try {
+    await launchViewer(filePath!, mode)
+  } catch (err: any) {
+    errorOut(err.code ?? "RENDER_FAILED", err.message)
   }
-
+  // TUI takes over — no explicit exit needed
 } else {
-  close()
-  errorOut("UNKNOWN_COMMAND", `Unknown command: ${command}`)
+
+  // ─── Open DB (only for DB commands) ──────────────────────────────────────
+
+  const instance = await DuckDBInstance.create(DB_PATH)
+  await setupDatabase(instance)
+  const conn = await instance.connect()
+
+  function close() {
+    conn.closeSync()
+    instance.closeSync()
+  }
+
+  // ─── DB Commands ───────────────────────────────────────────────────────────
+
+  if (command === "schema") {
+    const schema = await getSchema(conn)
+    out(schema)
+    close()
+    setImmediate(() => process.exit(0))
+
+  } else if (command === "query") {
+    const sqlIdx = rest.indexOf("--sql")
+    const sql = sqlIdx !== -1 ? rest[sqlIdx + 1] : undefined
+    if (!sql) {
+      close()
+      errorOut("MISSING_ARG", "query requires --sql \"<SQL>\"")
+    }
+    try {
+      const rows = await executeQuery(conn, sql!)
+      out(rows)
+    } catch (err: any) {
+      close()
+      errorOut(err.code ?? "QUERY_FAILED", err.message)
+    }
+    close()
+    setImmediate(() => process.exit(0))
+
+  } else if (command === "ingest") {
+    const filePath = rest.find(a => !a.startsWith("--"))
+    const dryRun = rest.includes("--dry-run")
+
+    if (!filePath) {
+      close()
+      errorOut("MISSING_ARG", "ingest requires a file path")
+    }
+
+    if (dryRun) {
+      const result = await dryRunIngest(conn, filePath!)
+      out(result)
+      close()
+      setImmediate(() => process.exit(result.valid ? 0 : 1))
+    } else {
+      const result = await runIngest(conn, filePath!)
+      out(result)
+      close()
+      setImmediate(() => process.exit(result.status === "error" ? 1 : 0))
+    }
+
+  } else {
+    close()
+    errorOut("UNKNOWN_COMMAND", `Unknown command: ${command}`)
+  }
 }

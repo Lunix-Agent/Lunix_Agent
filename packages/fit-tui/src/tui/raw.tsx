@@ -1,3 +1,4 @@
+// @ts-nocheck — OpenTUI JSX types don't match standard React IntrinsicAttributes
 import { createCliRenderer } from "@opentui/core"
 import { createRoot, useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/react"
 import { useState, useMemo } from "react"
@@ -294,36 +295,44 @@ function App({ types, filename, version }: {
   )
 }
 
-// ─── Bootstrap ───────────────────────────────────────────────────────────────
+// ─── Render entry point ─────────────────────────────────────────────────────
 
-const filePath = process.argv[2]
-if (!filePath) {
-  console.error("Usage: bun run src/raw.tsx <file.fit>")
-  console.error("  Paths can be relative or absolute.")
-  process.exit(1)
+export async function renderRaw(filePath: string): Promise<void> {
+  const resolved = path.resolve(process.cwd(), filePath)
+  const buffer = await Bun.file(resolved).arrayBuffer()
+
+  const parser = new FitParser({
+    force: true,
+    speedUnit: "km/h",
+    temperatureUnit: "celsius",
+    elapsedRecordField: true,
+    mode: "list",
+  })
+
+  const fitData = await parser.parseAsync(Buffer.from(buffer)) as Record<string, unknown>
+  const types = buildTypes(fitData)
+
+  if (types.length === 0) {
+    throw new Error(`No message data found in: ${resolved}`)
+  }
+
+  const version = `${fitData.profileVersion ?? "?"}`
+  const filename = path.basename(resolved)
+
+  const renderer = await createCliRenderer({ exitOnCtrlC: true })
+  createRoot(renderer).render(<App types={types} filename={filename} version={version} />)
 }
 
-const resolved = path.resolve(process.cwd(), filePath)
-const buffer = await Bun.file(resolved).arrayBuffer()
+// ─── Standalone entry ───────────────────────────────────────────────────────
 
-const parser = new FitParser({
-  force: true,
-  speedUnit: "km/h",
-  temperatureUnit: "celsius",
-  elapsedRecordField: true,
-  mode: "list",
-})
-
-const fitData = await parser.parseAsync(Buffer.from(buffer)) as Record<string, unknown>
-const types = buildTypes(fitData)
-
-if (types.length === 0) {
-  console.error(`No message data found in: ${resolved}`)
-  process.exit(1)
+if (import.meta.main) {
+  const filePath = process.argv[2]
+  if (!filePath) {
+    console.error("Usage: bun run src/tui/raw.tsx <file.fit>")
+    process.exit(1)
+  }
+  renderRaw(filePath).catch((err) => {
+    console.error(err.message)
+    process.exit(1)
+  })
 }
-
-const version = `${fitData.profileVersion ?? "?"}`
-const filename = path.basename(resolved)
-
-const renderer = await createCliRenderer({ exitOnCtrlC: true })
-createRoot(renderer).render(<App types={types} filename={filename} version={version} />)

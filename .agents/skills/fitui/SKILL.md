@@ -173,6 +173,38 @@ bun run packages/fit-tui/src/cli.ts ingest data/475490951656144900.fit
 
 ---
 
+### `fitui view <file.fit> [--mode laps|raw|tree|protocol]`
+
+Interactive TUI viewer for `.fit` files. **Requires a TTY (interactive terminal).**
+Agents running in non-TTY contexts will receive a `TTY_REQUIRED` error — use `fitui query`
+to extract data programmatically instead.
+
+```bash
+bun run packages/fit-tui/src/cli.ts view data/475490951656144900.fit
+bun run packages/fit-tui/src/cli.ts view data/475490951656144900.fit --mode raw
+```
+
+**Modes:**
+
+| Mode | Description |
+|------|-------------|
+| `laps` (default) | Lap/record activity viewer — shows splits, HR, pace, cadence |
+| `raw` | Flat message-type explorer — lists all FIT message types |
+| `tree` | Collapsible cascade hierarchy tree |
+| `protocol` | Binary FIT protocol explorer — raw definition messages |
+
+**Non-TTY error (stderr):**
+```json
+{ "error": true, "code": "TTY_REQUIRED", "message": "view command requires a TTY (interactive terminal)" }
+```
+
+**Guardrails:**
+- Do not call `view` from agent contexts — it takes over the terminal.
+- Use `fitui query` for programmatic data access instead.
+- Does not require a database connection — parses `.fit` files directly.
+
+---
+
 ## Error codes
 
 | Code | Meaning |
@@ -182,5 +214,9 @@ bun run packages/fit-tui/src/cli.ts ingest data/475490951656144900.fit
 | `MISSING_ARG` | Required argument not provided |
 | `DB_OPEN_FAILED` | Database file could not be opened |
 | `UNKNOWN_COMMAND` | Unrecognised command name |
+| `TTY_REQUIRED` | `view` command called from non-TTY context |
+| `INVALID_MODE` | Unknown `--mode` value for `view` command |
+| `INVALID_FILE` | File extension or path failed validation |
+| `RENDER_FAILED` | TUI renderer encountered an error |
 
 All errors exit with code 1. Parse stderr JSON to get the code and message.

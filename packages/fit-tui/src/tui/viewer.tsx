@@ -1,3 +1,4 @@
+// @ts-nocheck — OpenTUI JSX types don't match standard React IntrinsicAttributes
 import { createCliRenderer } from "@opentui/core"
 import { createRoot, useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/react"
 import { useState } from "react"
@@ -381,34 +382,42 @@ function App({ laps }: { laps: Lap[] }) {
   )
 }
 
-// ─── Bootstrap ───────────────────────────────────────────────────────────────
+// ─── Render entry point ─────────────────────────────────────────────────────
 
-const filePath = process.argv[2]
-if (!filePath) {
-  console.error("Usage: bun run src/viewer.tsx <file.fit>")
-  console.error("  Paths can be relative or absolute.")
-  process.exit(1)
+export async function renderViewer(filePath: string): Promise<void> {
+  const resolved = path.resolve(process.cwd(), filePath)
+  const buffer = await Bun.file(resolved).arrayBuffer()
+
+  const parser = new FitParser({
+    force: true,
+    speedUnit: "km/h",
+    temperatureUnit: "celsius",
+    elapsedRecordField: true,
+    mode: "cascade",
+  })
+
+  const fitData = await parser.parseAsync(Buffer.from(buffer))
+  const sessions = fitData.activity?.sessions ?? []
+  const laps: Lap[] = (sessions.flatMap((s: any) => s.laps ?? [])) as Lap[]
+
+  if (laps.length === 0) {
+    throw new Error(`No lap data found in: ${resolved}`)
+  }
+
+  const renderer = await createCliRenderer({ exitOnCtrlC: true })
+  createRoot(renderer).render(<App laps={laps} />)
 }
 
-const resolved = path.resolve(process.cwd(), filePath)
-const buffer = await Bun.file(resolved).arrayBuffer()
+// ─── Standalone entry ───────────────────────────────────────────────────────
 
-const parser = new FitParser({
-  force: true,
-  speedUnit: "km/h",
-  temperatureUnit: "celsius",
-  elapsedRecordField: true,
-  mode: "cascade",
-})
-
-const fitData = await parser.parseAsync(Buffer.from(buffer))
-const sessions = fitData.activity?.sessions ?? []
-const laps: Lap[] = (sessions.flatMap((s: any) => s.laps ?? [])) as Lap[]
-
-if (laps.length === 0) {
-  console.error(`No lap data found in: ${resolved}`)
-  process.exit(1)
+if (import.meta.main) {
+  const filePath = process.argv[2]
+  if (!filePath) {
+    console.error("Usage: bun run src/tui/viewer.tsx <file.fit>")
+    process.exit(1)
+  }
+  renderViewer(filePath).catch((err) => {
+    console.error(err.message)
+    process.exit(1)
+  })
 }
-
-const renderer = await createCliRenderer({ exitOnCtrlC: true })
-createRoot(renderer).render(<App laps={laps} />)
