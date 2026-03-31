@@ -64,4 +64,5 @@ data
 .vibe/
 .windsurf/
 .zencoder/
-skills/
+# Platform-level skill copies at root (not the canonical .agents/skills/ source)
+/skills/
