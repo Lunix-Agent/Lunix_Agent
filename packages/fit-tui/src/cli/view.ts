@@ -4,11 +4,17 @@ export type ViewMode = (typeof VALID_MODES)[number]
 // Dynamic imports — the TUI .tsx files have OpenTUI/React type issues that
 // don't affect runtime. Using import() keeps them out of tsc's scope.
 async function getRenderer(mode: ViewMode): Promise<(filePath: string) => Promise<void>> {
-  switch (mode) {
-    case 'laps':     return (await import("../tui/viewer.tsx")).renderViewer
-    case 'raw':      return (await import("../tui/raw.tsx")).renderRaw
-    case 'tree':     return (await import("../tui/tree.tsx")).renderTree
-    case 'protocol': return (await import("../tui/protocol.tsx")).renderProtocol
+  try {
+    switch (mode) {
+      case 'laps':     return (await import("../tui/viewer.tsx")).renderViewer
+      case 'raw':      return (await import("../tui/raw.tsx")).renderRaw
+      case 'tree':     return (await import("../tui/tree.tsx")).renderTree
+      case 'protocol': return (await import("../tui/protocol.tsx")).renderProtocol
+    }
+  } catch {
+    const err = new Error("view command requires Bun runtime (@opentui is not available on Node.js)") as any
+    err.code = "BUN_REQUIRED"
+    throw err
   }
 }
 

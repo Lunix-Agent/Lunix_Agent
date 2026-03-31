@@ -1,6 +1,7 @@
 import path from "node:path"
 import { DuckDBConnection } from "@duckdb/node-api"
 import { parseFitFile, ingestFile } from "../db/ingest.ts"
+import { fileExists } from "../compat.ts"
 
 export interface DryRunResult {
   valid: boolean
@@ -30,8 +31,7 @@ export async function dryRunIngest(conn: DuckDBConnection, filePath: string): Pr
   if (pathError) return { valid: false, file: filePath, error: pathError }
 
   const resolved = path.resolve(process.cwd(), filePath)
-  const file = await Bun.file(resolved)
-  if (!(await file.exists())) {
+  if (!(await fileExists(resolved))) {
     return { valid: false, file: filePath, error: `file not found: ${filePath}` }
   }
 

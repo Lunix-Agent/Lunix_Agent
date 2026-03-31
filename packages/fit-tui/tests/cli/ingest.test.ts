@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'bun:test'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { DuckDBInstance } from '@duckdb/node-api'
 import { setupDatabase } from '../../src/db/schema'
 import { dryRunIngest, runIngest } from '../../src/cli/ingest'
 
-const SAMPLE_FIT = path.resolve(import.meta.dir, '../../../../data/475490951656144900.fit')
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const SAMPLE_FIT = path.resolve(__dirname, '../../../../data/475490951656144900.fit')
 
 async function freshDb() {
   const instance = await DuckDBInstance.create(':memory:')

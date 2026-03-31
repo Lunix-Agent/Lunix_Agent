@@ -1,30 +1,34 @@
 {
   "name": "fitui",
   "version": "0.1.0",
-  "description": "FIT file database and query library for Bun",
+  "description": "FIT file database and query library for Bun and Node.js",
   "type": "module",
   "private": false,
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     }
   },
   "bin": {
-    "fitui": "./src/cli.ts"
+    "fitui": "./dist/cli.js"
   },
-  "files": ["src"],
+  "files": ["src", "dist"],
   "engines": {
-    "bun": ">=1.0.0"
+    "bun": ">=1.0.0",
+    "node": ">=18.0.0"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "typecheck": "tsc --noEmit",
-    "prepack": "bun run typecheck"
+    "prepack": "bun run typecheck && bun run build"
   },
   "dependencies": {
     "@duckdb/node-api": "^1.4.4-r.1",
@@ -35,6 +39,7 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/node": "^22",
     "typescript": "^5"
   }
 }

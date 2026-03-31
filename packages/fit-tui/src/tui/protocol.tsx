@@ -1,4 +1,5 @@
 // @ts-nocheck — OpenTUI JSX types don't match standard React IntrinsicAttributes
+import { readFileBuffer, isMainModule } from "../compat.ts"
 import { createCliRenderer } from "@opentui/core"
 import { createRoot, useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/react"
 import { useState } from "react"
@@ -636,7 +637,7 @@ function App({ header, definitions, filename }: {
 
 export async function renderProtocol(filePath: string): Promise<void> {
   const resolved = path.resolve(process.cwd(), filePath)
-  const buffer = await Bun.file(resolved).arrayBuffer()
+  const buffer = await readFileBuffer(resolved)
 
   const { header, definitions } = parseFitProtocol(buffer)
 
@@ -652,7 +653,7 @@ export async function renderProtocol(filePath: string): Promise<void> {
 
 // ─── Standalone entry ───────────────────────────────────────────────────────
 
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   const filePath = process.argv[2]
   if (!filePath) {
     console.error("Usage: bun run src/tui/protocol.tsx <file.fit>")

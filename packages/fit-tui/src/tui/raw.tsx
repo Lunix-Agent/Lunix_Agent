@@ -1,4 +1,5 @@
 // @ts-nocheck — OpenTUI JSX types don't match standard React IntrinsicAttributes
+import { readFileBuffer, isMainModule } from "../compat.ts"
 import { createCliRenderer } from "@opentui/core"
 import { createRoot, useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/react"
 import { useState, useMemo } from "react"
@@ -299,7 +300,7 @@ function App({ types, filename, version }: {
 
 export async function renderRaw(filePath: string): Promise<void> {
   const resolved = path.resolve(process.cwd(), filePath)
-  const buffer = await Bun.file(resolved).arrayBuffer()
+  const buffer = await readFileBuffer(resolved)
 
   const parser = new FitParser({
     force: true,
@@ -309,7 +310,7 @@ export async function renderRaw(filePath: string): Promise<void> {
     mode: "list",
   })
 
-  const fitData = await parser.parseAsync(Buffer.from(buffer)) as Record<string, unknown>
+  const fitData = await parser.parseAsync(buffer) as Record<string, unknown>
   const types = buildTypes(fitData)
 
   if (types.length === 0) {
@@ -325,7 +326,7 @@ export async function renderRaw(filePath: string): Promise<void> {
 
 // ─── Standalone entry ───────────────────────────────────────────────────────
 
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   const filePath = process.argv[2]
   if (!filePath) {
     console.error("Usage: bun run src/tui/raw.tsx <file.fit>")

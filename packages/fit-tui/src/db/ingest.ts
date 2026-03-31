@@ -3,6 +3,7 @@ import fs from "node:fs"
 import FitParser from "fit-file-parser"
 import { DuckDBConnection, DuckDBInstance, DuckDBTimestampValue } from "@duckdb/node-api"
 import { setupDatabase } from "./schema.ts"
+import { readFileBuffer, sha256Hex, isMainModule } from "../compat.ts"
 
 const DB_PATH = process.env.FIT_DB_PATH
   ? path.resolve(process.env.FIT_DB_PATH)
@@ -55,7 +56,7 @@ export interface FitFileSummary {
 }
 
 export async function parseFitFile(fitPath: string): Promise<FitFileSummary> {
-  const buffer = await Bun.file(fitPath).arrayBuffer()
+  const buffer = await readFileBuffer(fitPath)
   const parser = new FitParser({
     force: true,
     speedUnit: "km/h",
@@ -63,7 +64,7 @@ export async function parseFitFile(fitPath: string): Promise<FitFileSummary> {
     elapsedRecordField: true,
     mode: "cascade",
   })
-  const fitData = await (parser as any).parseAsync(Buffer.from(buffer))
+  const fitData = await (parser as any).parseAsync(buffer)
   const activity = fitData.activity
   if (!activity) throw new Error("No activity found in FIT file")
   const sessions: any[] = activity.sessions ?? []
@@ -92,12 +93,10 @@ export async function ingestFile(conn: DuckDBConnection, fitPath: string): Promi
   const resolved = path.resolve(process.cwd(), fitPath)
   const fileName = path.basename(resolved)
 
-  const buffer = await Bun.file(resolved).arrayBuffer()
+  const buffer = await readFileBuffer(resolved)
 
   // Content hash — catches duplicate files regardless of name or path
-  const hasher = new Bun.CryptoHasher("sha256")
-  hasher.update(new Uint8Array(buffer))
-  const fileHash = hasher.digest("hex")
+  const fileHash = sha256Hex(buffer)
 
   const parser = new FitParser({
     force: true,
@@ -106,7 +105,7 @@ export async function ingestFile(conn: DuckDBConnection, fitPath: string): Promi
     elapsedRecordField: true,
     mode: "cascade",
   })
-  const fitData = await (parser as any).parseAsync(Buffer.from(buffer))
+  const fitData = await (parser as any).parseAsync(buffer)
 
   const activity = fitData.activity
   if (!activity) throw new Error("No activity found in FIT file")
@@ -343,7 +342,7 @@ function collectFitFiles(args: string[]): string[] {
 
 // ─── CLI entry ────────────────────────────────────────────────────────────────
 
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   const args = process.argv.slice(2)
   if (args.length === 0) {
     console.error("Usage: bun run src/db/ingest.ts <file.fit> [file2.fit ...] [dir/]")
