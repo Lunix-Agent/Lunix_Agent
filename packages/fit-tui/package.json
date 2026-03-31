@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "type": "module",
   "private": false,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "bin": {
     "fitui": "./src/cli.ts"
   },
