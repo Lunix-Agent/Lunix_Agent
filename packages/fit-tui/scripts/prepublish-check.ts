@@ -17,6 +17,13 @@ import path from "node:path"
 const PKG_DIR = path.resolve(import.meta.dir, "..")
 const PKG_JSON_PATH = path.join(PKG_DIR, "package.json")
 
+// Derive tarball filename from scoped package name
+// @scope/name → scope-name-version.tgz
+function tarballName(name: string, version: string): string {
+  const cleaned = name.replace(/^@/, "").replace(/\//g, "-")
+  return `${cleaned}-${version}.tgz`
+}
+
 let passed = 0
 let failed = false
 
@@ -31,11 +38,11 @@ function fail(msg: string): never {
   process.exit(1)
 }
 
-console.log("\nfitui prepublish check\n")
+const pkg = JSON.parse(await readFile(PKG_JSON_PATH, "utf-8"))
+
+console.log(`\n${pkg.name} prepublish check\n`)
 
 // ─── Check 1: package.json required fields ──────────────────────────────────
-
-const pkg = JSON.parse(await readFile(PKG_JSON_PATH, "utf-8"))
 const requiredFields = [
   "name", "version", "description", "license", "author", "repository",
   "keywords", "main", "types", "exports", "bin", "files", "engines",
@@ -161,8 +168,8 @@ try {
 // ─── Check 9: Isolated Bun install test ─────────────────────────────────────
 
 {
-  const tarball = path.join(PKG_DIR, `fitui-${pkg.version}.tgz`)
-  const tmpDir = `/tmp/.fitui-bun-test-${Date.now()}`
+  const tarball = path.join(PKG_DIR, `${tarballName(pkg.name, pkg.version)}`)
+  const tmpDir = `/tmp/.fit-publish-bun-test-${Date.now()}`
 
   // Pack the tarball
   await $`cd ${PKG_DIR} && bun pm pack`.quiet().nothrow()
@@ -171,7 +178,7 @@ try {
     await rm(tmpDir, { recursive: true, force: true })
     await mkdir(tmpDir, { recursive: true })
 
-    const localTarball = path.join(tmpDir, `fitui-${pkg.version}.tgz`)
+    const localTarball = path.join(tmpDir, `${tarballName(pkg.name, pkg.version)}`)
     await $`cp ${tarball} ${localTarball}`.quiet()
 
     await $`cd ${tmpDir} && bun init -y`.quiet().nothrow()
@@ -181,7 +188,7 @@ try {
     }
 
     // Test library import
-    const importResult = await $`cd ${tmpDir} && bun -e "const m = await import('fitui'); if (typeof m.createClient !== 'function') throw new Error('createClient not a function')"`.quiet().nothrow()
+    const importResult = await $`cd ${tmpDir} && bun -e "const m = await import('${pkg.name}'); if (typeof m.createClient !== 'function') throw new Error('createClient not a function')"`.quiet().nothrow()
     if (importResult.exitCode !== 0) {
       fail(`Bun import failed: ${importResult.stderr.toString()}`)
     }
@@ -202,9 +209,9 @@ try {
 // ─── Check 10: Isolated Node install test ───────────────────────────────────
 
 {
-  const tarball = path.join(PKG_DIR, `fitui-${pkg.version}.tgz`)
+  const tarball = path.join(PKG_DIR, `${tarballName(pkg.name, pkg.version)}`)
   // Use /tmp to avoid inheriting workspace config from parent directories
-  const tmpDir = `/tmp/.fitui-node-test-${Date.now()}`
+  const tmpDir = `/tmp/.fit-publish-node-test-${Date.now()}`
 
   await $`cd ${PKG_DIR} && bun pm pack`.quiet().nothrow()
 
@@ -213,7 +220,7 @@ try {
     await mkdir(tmpDir, { recursive: true })
 
     // Copy tarball into temp dir so npm doesn't resolve upward into the workspace
-    const localTarball = path.join(tmpDir, `fitui-${pkg.version}.tgz`)
+    const localTarball = path.join(tmpDir, `${tarballName(pkg.name, pkg.version)}`)
     await $`cp ${tarball} ${localTarball}`.quiet()
 
     await $`cd ${tmpDir} && npm init -y`.quiet().nothrow()
@@ -223,7 +230,7 @@ try {
     }
 
     // Test library import
-    const importResult = await $`cd ${tmpDir} && node -e "import('fitui').then(m => { if (typeof m.createClient !== 'function') { process.exit(1) } })"`.quiet().nothrow()
+    const importResult = await $`cd ${tmpDir} && node -e "import('${pkg.name}').then(m => { if (typeof m.createClient !== 'function') { process.exit(1) } })"`.quiet().nothrow()
     if (importResult.exitCode !== 0) {
       fail(`Node import failed: ${importResult.stderr.toString()}`)
     }
@@ -244,8 +251,8 @@ try {
 // ─── Check 11: Exports resolve correctly ────────────────────────────────────
 
 {
-  const tarball = path.join(PKG_DIR, `fitui-${pkg.version}.tgz`)
-  const tmpDir = `/tmp/.fitui-exports-test-${Date.now()}`
+  const tarball = path.join(PKG_DIR, `${tarballName(pkg.name, pkg.version)}`)
+  const tmpDir = `/tmp/.fit-publish-exports-test-${Date.now()}`
 
   await $`cd ${PKG_DIR} && bun pm pack`.quiet().nothrow()
 
@@ -253,7 +260,7 @@ try {
     await rm(tmpDir, { recursive: true, force: true })
     await mkdir(tmpDir, { recursive: true })
 
-    const localTarball = path.join(tmpDir, `fitui-${pkg.version}.tgz`)
+    const localTarball = path.join(tmpDir, `${tarballName(pkg.name, pkg.version)}`)
     await $`cp ${tarball} ${localTarball}`.quiet()
 
     await $`cd ${tmpDir} && npm init -y`.quiet().nothrow()
@@ -261,7 +268,7 @@ try {
 
     const exports = ["createClient", "setupDatabase", "listActivities", "weeklyLoad", "sessionDetail"]
     for (const name of exports) {
-      const result = await $`cd ${tmpDir} && node -e "import('fitui').then(m => { if (typeof m.${name} !== 'function') { console.error('missing: ${name}'); process.exit(1) } })"`.quiet().nothrow()
+      const result = await $`cd ${tmpDir} && node -e "import('${pkg.name}').then(m => { if (typeof m.${name} !== 'function') { console.error('missing: ${name}'); process.exit(1) } })"`.quiet().nothrow()
       if (result.exitCode !== 0) {
         fail(`export '${name}' not found on Node`)
       }
@@ -277,7 +284,7 @@ try {
 // ─── Check 12: Version not already published ────────────────────────────────
 
 {
-  const result = await $`npm view fitui@${pkg.version} version`.quiet().nothrow()
+  const result = await $`npm view ${pkg.name}@${pkg.version} version`.quiet().nothrow()
   const published = result.stdout.toString().trim()
   if (published === pkg.version) {
     fail(`version ${pkg.version} is already published on npm — bump the version first`)
@@ -288,4 +295,4 @@ try {
 // ─── Summary ────────────────────────────────────────────────────────────────
 
 console.log(`\n\x1b[32mAll ${passed} checks passed.\x1b[0m Ready to publish:\n`)
-console.log(`  cd packages/fit-tui && npm publish\n`)
+console.log(`  cd packages/fit-tui && npm publish --access public\n`)

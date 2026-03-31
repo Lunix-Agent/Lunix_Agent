@@ -1,5 +1,5 @@
 {
-  "name": "fitui",
+  "name": "@_davideast/fit",
   "version": "0.1.0",
   "description": "FIT file database and query library for Bun and Node.js",
   "license": "MIT",

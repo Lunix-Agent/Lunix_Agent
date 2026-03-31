@@ -1,7 +1,7 @@
 import { DuckDBConnection } from "@duckdb/node-api"
 
 // Re-export all activity queries — coaching consumers have one import point
-export * from "fitui"
+export * from "@_davideast/fit"
 
 // ─── Entries & Observations ───────────────────────────────────────────────────
 

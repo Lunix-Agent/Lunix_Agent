@@ -1,4 +1,4 @@
-# fitui
+# @_davideast/fit
 
 Parse Garmin `.fit` files, store them in DuckDB, and query your training data from the terminal or from code.
 
@@ -58,7 +58,7 @@ fitui view morning-run.fit --mode protocol
 Use it as a library:
 
 ```typescript
-import { createClient, setupDatabase, listActivities, weeklyLoad } from "fitui"
+import { createClient, setupDatabase, listActivities, weeklyLoad } from "@_davideast/fit"
 
 const client = await createClient("./fit.duckdb")
 await setupDatabase(client.conn)
@@ -75,7 +75,7 @@ client.close()
 Requires [Bun](https://bun.sh) >= 1.0.0.
 
 ```bash
-bun add fitui
+bun add @_davideast/fit
 ```
 
 ## CLI Reference
@@ -141,7 +141,7 @@ Requires a TTY. Non-TTY contexts receive `{"error": true, "code": "TTY_REQUIRED"
 Open a DuckDB database. Returns `{ conn, close }`. Throws with `code: 'DB_OPEN_FAILED'` on failure.
 
 ```typescript
-import { createClient } from "fitui"
+import { createClient } from "@_davideast/fit"
 
 const client = await createClient("./fit.duckdb")
 // use client.conn for queries
@@ -156,7 +156,7 @@ Create all tables, sequences, and indexes. Idempotent — safe to call on every 
 
 ```typescript
 import { DuckDBInstance } from "@duckdb/node-api"
-import { setupDatabase } from "fitui"
+import { setupDatabase } from "@_davideast/fit"
 
 const instance = await DuckDBInstance.create("./fit.duckdb")
 await setupDatabase(instance)
@@ -179,7 +179,7 @@ All query functions take a `DuckDBConnection` as the first argument and return r
 | `longestRuns(conn, n?)` | `n?: number` (default 10) | Top N longest runs by distance |
 
 ```typescript
-import { createClient, setupDatabase, sessionDetail, hrZones } from "fitui"
+import { createClient, setupDatabase, sessionDetail, hrZones } from "@_davideast/fit"
 import { DuckDBInstance } from "@duckdb/node-api"
 
 const instance = await DuckDBInstance.create("./fit.duckdb")
@@ -197,7 +197,7 @@ instance.closeSync()
 ### Ingest functions
 
 ```typescript
-import { parseFitFile, ingestFile } from "fitui"
+import { parseFitFile, ingestFile } from "@_davideast/fit"
 ```
 
 **`parseFitFile(path: string): Promise<FitFileSummary>`** — Parse a `.fit` file and return `{ sessions, laps, records, sport }` without touching the database.

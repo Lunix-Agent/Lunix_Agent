@@ -32,7 +32,7 @@ fitui view morning-run.fit --mode protocol
 Use the library from code:
 
 ```typescript
-import { createClient, setupDatabase, weeklyLoad, recentForm } from "fitui"
+import { createClient, setupDatabase, weeklyLoad, recentForm } from "@_davideast/fit"
 
 const client = await createClient("./fit.duckdb")
 await setupDatabase(client.conn)
@@ -76,7 +76,7 @@ This is a monorepo with two packages:
 
 | Package | npm name | Purpose |
 |---------|----------|---------|
-| `packages/fit-tui` | `fitui` | FIT file parsing, DuckDB storage, query functions, CLI, TUI viewer |
+| `packages/fit-tui` | `@_davideast/fit` | FIT file parsing, DuckDB storage, query functions, CLI, TUI viewer |
 | `packages/coaching` | `fit-coaching` (private) | Athlete profile, PRs, target races, journal entries, observations |
 
 **fitui** is the standalone library. It handles the activity data layer — parsing `.fit` files, storing sessions/laps/records in DuckDB, and querying them. It works on Bun and Node.js.
