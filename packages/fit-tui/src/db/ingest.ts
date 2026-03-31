@@ -4,7 +4,9 @@ import FitParser from "fit-file-parser"
 import { DuckDBConnection, DuckDBInstance, DuckDBTimestampValue } from "@duckdb/node-api"
 import { setupDatabase } from "./schema.ts"
 
-const DB_PATH = path.resolve(import.meta.dir, "../../../../data/fit.duckdb")
+const DB_PATH = process.env.FIT_DB_PATH
+  ? path.resolve(process.env.FIT_DB_PATH)
+  : path.resolve("fit.duckdb")
 
 // ─── SQL helpers ─────────────────────────────────────────────────────────────
 
@@ -117,7 +119,7 @@ export async function ingestFile(conn: DuckDBConnection, fitPath: string): Promi
     `SELECT id, file_path FROM activities WHERE file_path = ${sqlStr(resolved)} OR file_hash = ${sqlStr(fileHash)}`
   )
   if (existing.getRowObjectsJS().length > 0) {
-    const row = existing.getRowObjectsJS()[0]
+    const row = existing.getRowObjectsJS()[0]!
     const reason = String(row.file_path) === resolved ? "same path" : "same content"
     return `SKIP (${reason}: ${path.basename(String(row.file_path))})`
   }
@@ -128,9 +130,9 @@ export async function ingestFile(conn: DuckDBConnection, fitPath: string): Promi
     await conn.run("BEGIN")
 
     const actIdRes = await conn.runAndReadAll(`SELECT nextval('seq_activities') AS id`)
-    const activityId = Number(actIdRes.getRowObjectsJS()[0].id)
+    const activityId = Number(actIdRes.getRowObjectsJS()[0]!.id)
 
-    const firstSession = sessions[0]
+    const firstSession = sessions[0]!
     const recordedAt = sqlTs(firstSession.start_time ?? activity.timestamp)
     const sport = sqlStr(firstSession.sport ?? activity.sport ?? null)
 
@@ -144,10 +146,10 @@ export async function ingestFile(conn: DuckDBConnection, fitPath: string): Promi
     let totalLapCount = 0
 
     for (let si = 0; si < sessions.length; si++) {
-      const sess = sessions[si]
+      const sess = sessions[si]!
 
       const sessIdRes = await conn.runAndReadAll(`SELECT nextval('seq_sessions') AS id`)
-      const sessionId = Number(sessIdRes.getRowObjectsJS()[0].id)
+      const sessionId = Number(sessIdRes.getRowObjectsJS()[0]!.id)
       sessionIds.push(sessionId)
 
       const avgSpeed = sess.avg_speed
@@ -183,10 +185,10 @@ export async function ingestFile(conn: DuckDBConnection, fitPath: string): Promi
       totalLapCount += laps.length
 
       for (let li = 0; li < laps.length; li++) {
-        const lap = laps[li]
+        const lap = laps[li]!
 
         const lapIdRes = await conn.runAndReadAll(`SELECT nextval('seq_laps') AS id`)
-        const lapId = Number(lapIdRes.getRowObjectsJS()[0].id)
+        const lapId = Number(lapIdRes.getRowObjectsJS()[0]!.id)
         const lapSpeed = lap.avg_speed
         const lapCadence = lap.avg_cadence != null ? lap.avg_cadence * 2 : null
 
@@ -221,8 +223,8 @@ export async function ingestFile(conn: DuckDBConnection, fitPath: string): Promi
     let totalRecordCount = 0
 
     for (let si = 0; si < sessions.length; si++) {
-      const sess = sessions[si]
-      const sessionId = sessionIds[si]
+      const sess = sessions[si]!
+      const sessionId = sessionIds[si]!
       const laps: any[] = sess.laps ?? []
 
       // Deduplicate records across laps by timestamp
@@ -364,7 +366,7 @@ if (import.meta.main) {
   const errors: { file: string; error: string }[] = []
 
   for (let i = 0; i < files.length; i++) {
-    const file = files[i]
+    const file = files[i]!
     const label = `[${i + 1}/${files.length}] ${path.basename(file)}`
     process.stdout.write(`${label} ... `)
     try {

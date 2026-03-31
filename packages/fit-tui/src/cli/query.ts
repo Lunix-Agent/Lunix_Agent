@@ -39,7 +39,7 @@ export async function executeQuery(
   }
 
   if (isWriteStatement(sql)) {
-    throw makeError('INPUT_REJECTED', `SQL rejected: query command is read-only (got ${sql.trimStart().split(/\s+/)[0].toUpperCase()})`)
+    throw makeError('INPUT_REJECTED', `SQL rejected: query command is read-only (got ${sql.trimStart().split(/\s+/)[0]?.toUpperCase()})`)
   }
 
   let result

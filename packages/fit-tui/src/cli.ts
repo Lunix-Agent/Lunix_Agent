@@ -18,7 +18,6 @@ import { getSchema } from "./cli/schema.ts"
 import { executeQuery } from "./cli/query.ts"
 import { dryRunIngest, runIngest } from "./cli/ingest.ts"
 
-const DB_PATH = path.resolve(import.meta.dir, "../../../data/fit.duckdb")
 const IS_TTY = Boolean(process.stdout.isTTY)
 
 function out(data: unknown) {
@@ -33,11 +32,27 @@ function errorOut(code: string, message: string, status = 1) {
 
 // ─── Parse args ──────────────────────────────────────────────────────────────
 
-const [, , command, ...rest] = process.argv
+// Extract global flags (--db) from all args, then find the command
+const allArgs = process.argv.slice(2)
+const dbIdx = allArgs.indexOf("--db")
+const DB_PATH = (dbIdx !== -1 && allArgs[dbIdx + 1] != null)
+  ? path.resolve(allArgs[dbIdx + 1]!)
+  : process.env.FIT_DB_PATH
+    ? path.resolve(process.env.FIT_DB_PATH)
+    : path.resolve("fit.duckdb")
+const argsWithoutDb = dbIdx !== -1
+  ? [...allArgs.slice(0, dbIdx), ...allArgs.slice(dbIdx + 2)]
+  : allArgs
+
+const command = argsWithoutDb[0]
+const rest = argsWithoutDb.slice(1)
 
 if (!command || command === "--help" || command === "-h") {
   process.stderr.write([
     "fitui — FIT file CLI",
+    "",
+    "Global flags:",
+    "  --db <path>     Path to DuckDB database (default: $FIT_DB_PATH or ./fit.duckdb)",
     "",
     "Commands:",
     "  fitui schema                          Print DB schema as JSON",
@@ -70,13 +85,13 @@ if (command === "schema") {
 
 } else if (command === "query") {
   const sqlIdx = rest.indexOf("--sql")
-  if (sqlIdx === -1 || !rest[sqlIdx + 1]) {
+  const sql = sqlIdx !== -1 ? rest[sqlIdx + 1] : undefined
+  if (!sql) {
     close()
     errorOut("MISSING_ARG", "query requires --sql \"<SQL>\"")
   }
-  const sql = rest[sqlIdx + 1]
   try {
-    const rows = await executeQuery(conn, sql)
+    const rows = await executeQuery(conn, sql!)
     out(rows)
   } catch (err: any) {
     close()
