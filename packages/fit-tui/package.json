@@ -1,0 +1,24 @@
+{
+  "name": "fit-tui",
+  "version": "0.1.0",
+  "type": "module",
+  "private": false,
+  "bin": {
+    "fitui": "./src/cli.ts"
+  },
+  "scripts": {
+    "test": "bun test",
+    "test:watch": "bun test --watch"
+  },
+  "dependencies": {
+    "@duckdb/node-api": "^1.4.4-r.1",
+    "@opentui/core": "^0.1.81",
+    "@opentui/react": "^0.1.81",
+    "fit-file-parser": "^2.3.3",
+    "react": "^19.2.4"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}

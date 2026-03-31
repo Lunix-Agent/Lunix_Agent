@@ -1,0 +1,17 @@
+{
+  "name": "fit-coaching",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "fit-tui": "workspace:*",
+    "@duckdb/node-api": "^1.4.4-r.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}

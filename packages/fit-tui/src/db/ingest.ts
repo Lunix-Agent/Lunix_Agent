@@ -1,10 +1,10 @@
 import path from "node:path"
 import fs from "node:fs"
 import FitParser from "fit-file-parser"
-import { DuckDBConnection, DuckDBTimestampValue } from "@duckdb/node-api"
+import { DuckDBConnection, DuckDBInstance, DuckDBTimestampValue } from "@duckdb/node-api"
 import { setupDatabase } from "./schema.ts"
 
-const DB_PATH = path.resolve(import.meta.dir, "../../data/fit.duckdb")
+const DB_PATH = path.resolve(import.meta.dir, "../../../../data/fit.duckdb")
 
 // ─── SQL helpers ─────────────────────────────────────────────────────────────
 
@@ -314,7 +314,8 @@ if (files.length === 0) {
 }
 
 console.log(`Found ${files.length} file(s). Opening database...`)
-const instance = await setupDatabase(DB_PATH)
+const instance = await DuckDBInstance.create(DB_PATH)
+await setupDatabase(instance)
 const conn = await instance.connect()
 
 let imported = 0

@@ -1,22 +1,16 @@
 {
-  "name": "fit",
-  "module": "index.ts",
+  "name": "fit-workspace",
   "type": "module",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
+    "test": "bun test --cwd packages/fit-tui && bun test --cwd packages/coaching",
     "viewer": "bun run src/viewer.tsx"
   },
-  "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
+    "@types/bun": "latest",
     "typescript": "^5"
-  },
-  "dependencies": {
-    "@duckdb/node-api": "^1.4.4-r.1",
-    "@opentui/core": "^0.1.81",
-    "@opentui/react": "^0.1.81",
-    "fit-file-parser": "^2.3.3",
-    "react": "^19.2.4"
   }
 }

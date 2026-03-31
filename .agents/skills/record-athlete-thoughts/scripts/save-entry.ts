@@ -31,7 +31,7 @@ import {
   recordAthleteThoughts,
   saveExtractedObservations,
   type ObservationInput,
-} from "../../../../src/db/queries.ts"
+} from "../../../../packages/coaching/src/db/queries.ts"
 
 const DB_PATH = path.resolve(import.meta.dir, "../../../../data/fit.duckdb")
 

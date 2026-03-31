@@ -28,7 +28,7 @@
 
 import { DuckDBInstance } from "@duckdb/node-api"
 import path from "node:path"
-import { savePersonalRecord, type PersonalRecordInput } from "../../../../src/db/queries.ts"
+import { savePersonalRecord, type PersonalRecordInput } from "../../../../packages/coaching/src/db/queries.ts"
 
 const DB_PATH = path.resolve(import.meta.dir, "../../../../data/fit.duckdb")
 

@@ -22,7 +22,7 @@
 
 import { DuckDBInstance } from "@duckdb/node-api"
 import path from "node:path"
-import { validateObservation } from "../../../../src/db/queries.ts"
+import { validateObservation } from "../../../../packages/coaching/src/db/queries.ts"
 
 const DB_PATH = path.resolve(import.meta.dir, "../../../../data/fit.duckdb")
 
