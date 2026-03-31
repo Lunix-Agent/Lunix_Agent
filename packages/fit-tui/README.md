@@ -7,8 +7,8 @@ Parse Garmin `.fit` files, store them in DuckDB, and query your training data fr
 Import a `.fit` file and query your sessions:
 
 ```bash
-fitui ingest morning-run.fit
-fitui query --sql "SELECT sport, count(*) AS runs, round(avg(total_distance_m / 1000), 1) AS avg_km FROM sessions GROUP BY sport"
+fit ingest morning-run.fit
+fit query --sql "SELECT sport, count(*) AS runs, round(avg(total_distance_m / 1000), 1) AS avg_km FROM sessions GROUP BY sport"
 ```
 
 ```json
@@ -18,7 +18,7 @@ fitui query --sql "SELECT sport, count(*) AS runs, round(avg(total_distance_m / 
 Inspect the database schema before writing SQL:
 
 ```bash
-fitui schema
+fit schema
 ```
 
 ```json
@@ -41,7 +41,7 @@ fitui schema
 Validate a file before importing it:
 
 ```bash
-fitui ingest morning-run.fit --dry-run
+fit ingest morning-run.fit --dry-run
 ```
 
 ```json
@@ -51,8 +51,8 @@ fitui ingest morning-run.fit --dry-run
 Browse a `.fit` file interactively in the terminal:
 
 ```bash
-fitui view morning-run.fit
-fitui view morning-run.fit --mode protocol
+fit view morning-run.fit
+fit view morning-run.fit --mode protocol
 ```
 
 Use it as a library:
@@ -88,48 +88,48 @@ All commands output JSON. In a TTY, output is pretty-printed. When piped, output
 |------|-------------|---------|
 | `--db <path>` | Path to DuckDB database | `$FIT_DB_PATH` or `./fit.duckdb` |
 
-### `fitui schema`
+### `fit schema`
 
 Print every table and column in the database.
 
 ```bash
-fitui schema
+fit schema
 ```
 
-### `fitui query --sql "<SQL>"`
+### `fit query --sql "<SQL>"`
 
 Run a read-only SQL query against DuckDB. Write operations (INSERT, DELETE, DROP, etc.) are rejected.
 
 ```bash
-fitui query --sql "SELECT sport, start_time, total_distance_m FROM sessions ORDER BY start_time DESC LIMIT 5"
+fit query --sql "SELECT sport, start_time, total_distance_m FROM sessions ORDER BY start_time DESC LIMIT 5"
 ```
 
 DATE columns return `"YYYY-MM-DD"` strings. TIMESTAMP columns return full ISO strings. BigInts are coerced to numbers.
 
 SQL containing `../`, semicolons outside string literals, or write keywords is rejected with `INPUT_REJECTED`.
 
-### `fitui ingest <file.fit> [--dry-run]`
+### `fit ingest <file.fit> [--dry-run]`
 
 Import a `.fit` file into the database.
 
 ```bash
-fitui ingest run.fit --dry-run    # validate without writing
-fitui ingest run.fit              # import
+fit ingest run.fit --dry-run    # validate without writing
+fit ingest run.fit              # import
 ```
 
 Idempotent — importing the same file twice returns `"status": "skipped"`. Deduplication checks both file path and content hash.
 
 Path traversal (`../`) and non-`.fit` extensions are rejected.
 
-### `fitui view <file.fit> [--mode laps|raw|tree|protocol]`
+### `fit view <file.fit> [--mode laps|raw|tree|protocol]`
 
 Open an interactive terminal viewer for a `.fit` file. Does not require a database — parses the file directly.
 
 ```bash
-fitui view run.fit                # default: lap breakdown
-fitui view run.fit --mode raw     # flat message-type explorer
-fitui view run.fit --mode tree    # collapsible cascade hierarchy
-fitui view run.fit --mode protocol  # binary FIT protocol inspector
+fit view run.fit                # default: lap breakdown
+fit view run.fit --mode raw     # flat message-type explorer
+fit view run.fit --mode tree    # collapsible cascade hierarchy
+fit view run.fit --mode protocol  # binary FIT protocol inspector
 ```
 
 Requires a TTY. Non-TTY contexts receive `{"error": true, "code": "TTY_REQUIRED"}`.

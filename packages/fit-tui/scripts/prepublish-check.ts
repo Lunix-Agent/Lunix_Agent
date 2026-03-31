@@ -194,9 +194,9 @@ try {
     }
 
     // Test CLI
-    const cliResult = await $`cd ${tmpDir} && bunx fitui --help`.quiet().nothrow()
+    const cliResult = await $`cd ${tmpDir} && bunx fit --help`.quiet().nothrow()
     if (cliResult.exitCode !== 0) {
-      fail(`bunx fitui --help failed: ${cliResult.stderr.toString()}`)
+      fail(`bunx fit --help failed: ${cliResult.stderr.toString()}`)
     }
 
     pass("Bun install + import works")
@@ -236,9 +236,9 @@ try {
     }
 
     // Test CLI
-    const cliResult = await $`cd ${tmpDir} && npx fitui --help`.quiet().nothrow()
+    const cliResult = await $`cd ${tmpDir} && npx fit --help`.quiet().nothrow()
     if (cliResult.exitCode !== 0) {
-      fail(`npx fitui --help failed: ${cliResult.stderr.toString()}`)
+      fail(`npx fit --help failed: ${cliResult.stderr.toString()}`)
     }
 
     pass("Node install + import works")

@@ -1,4 +1,4 @@
-# fitui
+# fit
 
 Turn Garmin `.fit` files into a queryable training database — then layer athlete context (thoughts, PRs, race goals) on top for AI coaching.
 
@@ -7,8 +7,8 @@ Turn Garmin `.fit` files into a queryable training database — then layer athle
 Ingest a run from your watch and query it:
 
 ```bash
-fitui ingest morning-run.fit
-fitui query --sql "
+fit ingest morning-run.fit
+fit query --sql "
   SELECT sport, count(*) AS runs,
     round(avg(total_distance_m / 1000), 1) AS avg_km,
     round(avg(avg_pace_min_per_km), 2) AS avg_pace
@@ -25,8 +25,8 @@ fitui query --sql "
 Browse a `.fit` file interactively in the terminal:
 
 ```bash
-fitui view morning-run.fit
-fitui view morning-run.fit --mode protocol
+fit view morning-run.fit
+fit view morning-run.fit --mode protocol
 ```
 
 Use the library from code:
@@ -79,13 +79,13 @@ This is a monorepo with two packages:
 | `packages/fit-tui` | `@_davideast/fit` | FIT file parsing, DuckDB storage, query functions, CLI, TUI viewer |
 | `packages/coaching` | `fit-coaching` (private) | Athlete profile, PRs, target races, journal entries, observations |
 
-**fitui** is the standalone library. It handles the activity data layer — parsing `.fit` files, storing sessions/laps/records in DuckDB, and querying them. It works on Bun and Node.js.
+**fit** is the standalone library. It handles the activity data layer — parsing `.fit` files, storing sessions/laps/records in DuckDB, and querying them. It works on Bun and Node.js.
 
-**fit-coaching** extends fitui with athlete context. It imports and re-exports everything from fitui, then adds coaching-specific tables and queries. It's private to this workspace — not published to npm.
+**fit-coaching** extends fit with athlete context. It imports and re-exports everything from fit, then adds coaching-specific tables and queries. It's private to this workspace — not published to npm.
 
 ```
-fitui (activity data)          fit-coaching (athlete context)
-├── activities                 ├── re-exports all fitui queries
+fit (activity data)          fit-coaching (athlete context)
+├── activities                 ├── re-exports all fit queries
 ├── sessions                   ├── entries (journal)
 ├── laps                       ├── observations (extracted facts)
 ├── records (per-second)       ├── athlete (profile)
@@ -97,15 +97,15 @@ fitui (activity data)          fit-coaching (athlete context)
 ## Setup
 
 ```bash
-git clone git@github.com:davideast/fitui.git
-cd fitui
+git clone git@github.com:davideast/fit.git
+cd fit
 bun install
 ```
 
 Import your `.fit` files:
 
 ```bash
-fitui --db data/fit.duckdb ingest data/your-run.fit
+fit --db data/fit.duckdb ingest data/your-run.fit
 ```
 
 Or point at a directory:
@@ -123,15 +123,15 @@ bun test --cwd packages/coaching    # 6 tests
 
 ## CLI
 
-The `fitui` CLI works on both Bun and Node.js. Full reference in [packages/fit-tui/README.md](packages/fit-tui/README.md).
+The `fit` CLI works on both Bun and Node.js. Full reference in [packages/fit-tui/README.md](packages/fit-tui/README.md).
 
 ```bash
-fitui schema                                          # database schema as JSON
-fitui query --sql "SELECT * FROM sessions LIMIT 5"    # read-only SQL
-fitui ingest run.fit --dry-run                         # validate without importing
-fitui ingest run.fit                                   # import to database
-fitui view run.fit                                     # interactive TUI (Bun only)
-fitui view run.fit --mode raw                          # flat message explorer
+fit schema                                          # database schema as JSON
+fit query --sql "SELECT * FROM sessions LIMIT 5"    # read-only SQL
+fit ingest run.fit --dry-run                         # validate without importing
+fit ingest run.fit                                   # import to database
+fit view run.fit                                     # interactive TUI (Bun only)
+fit view run.fit --mode raw                          # flat message explorer
 ```
 
 Use `--db <path>` or `FIT_DB_PATH` env var to specify the database location. Default: `./fit.duckdb`.
@@ -142,7 +142,7 @@ The `.agents/skills/` directory contains structured knowledge for AI coding agen
 
 | Skill | What it does |
 |-------|-------------|
-| `fitui` | CLI command reference, guardrails, error codes |
+| `fit` | CLI command reference, guardrails, error codes |
 | `athlete-profile` | Save profile details, PRs, and target races |
 | `record-athlete-thoughts` | Extract observations from free-form journal entries |
 | `tdd-red-green-refactor` | TDD workflow for this project |
@@ -152,7 +152,7 @@ The `.agents/skills/` directory contains structured knowledge for AI coding agen
 
 ```
 ├── packages/
-│   ├── fit-tui/            # fitui library + CLI
+│   ├── fit-tui/            # fit library + CLI
 │   │   ├── src/
 │   │   │   ├── db/         # schema, queries, client, ingest
 │   │   │   ├── cli/        # schema, query, ingest, view commands

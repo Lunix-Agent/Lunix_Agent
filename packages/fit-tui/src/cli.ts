@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * fitui — FIT file CLI
+ * fit — FIT file CLI
  *
  * Non-TTY (piped/agent) context → JSON output on stdout
  * TTY context → human-readable output
  *
  * Commands:
- *   fitui schema                                    Print DB schema as JSON
- *   fitui query --sql "<SQL>"                       Execute a SQL query, return rows as JSON
- *   fitui ingest <file.fit> [--dry-run]             Ingest a FIT file (or validate with --dry-run)
- *   fitui view <file.fit> [--mode laps|raw|tree|protocol]  Interactive TUI viewer (TTY only)
+ *   fit schema                                    Print DB schema as JSON
+ *   fit query --sql "<SQL>"                       Execute a SQL query, return rows as JSON
+ *   fit ingest <file.fit> [--dry-run]             Ingest a FIT file (or validate with --dry-run)
+ *   fit view <file.fit> [--mode laps|raw|tree|protocol]  Interactive TUI viewer (TTY only)
  */
 
 import path from "node:path"
@@ -51,16 +51,16 @@ const rest = argsWithoutDb.slice(1)
 
 if (!command || command === "--help" || command === "-h") {
   process.stderr.write([
-    "fitui — FIT file CLI",
+    "fit — FIT file CLI",
     "",
     "Global flags:",
     "  --db <path>     Path to DuckDB database (default: $FIT_DB_PATH or ./fit.duckdb)",
     "",
     "Commands:",
-    "  fitui schema                                    Print DB schema as JSON",
-    "  fitui query --sql \"<SQL>\"                       Execute a SQL query",
-    "  fitui ingest <file.fit> [--dry-run]             Ingest or validate a FIT file",
-    "  fitui view <file.fit> [--mode laps|raw|tree|protocol]  Interactive TUI (TTY only)",
+    "  fit schema                                    Print DB schema as JSON",
+    "  fit query --sql \"<SQL>\"                       Execute a SQL query",
+    "  fit ingest <file.fit> [--dry-run]             Ingest or validate a FIT file",
+    "  fit view <file.fit> [--mode laps|raw|tree|protocol]  Interactive TUI (TTY only)",
     "",
     "Non-TTY contexts always receive JSON output.",
   ].join("\n") + "\n")

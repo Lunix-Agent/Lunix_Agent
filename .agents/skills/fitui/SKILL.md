@@ -1,14 +1,14 @@
 ---
-name: fitui
+name: fit
 description: >
-  Interact with the fitui CLI to inspect the FIT activity database, run SQL queries,
+  Interact with the fit CLI to inspect the FIT activity database, run SQL queries,
   and ingest .fit files. Use this skill whenever you need to read activity data,
   validate a file before importing it, or introspect the database schema.
-  Always use --dry-run before ingest. Always use fitui schema before writing SQL.
+  Always use --dry-run before ingest. Always use fit schema before writing SQL.
 compatibility: Designed for Claude Code within the fit project. Requires bun and data/fit.duckdb.
 ---
 
-# fitui CLI
+# fit CLI
 
 Agent interface for the FIT activity database. The CLI is non-TTY aware: when piped
 or called from an agent context, all output is compact JSON on stdout. Errors are
@@ -18,7 +18,7 @@ JSON on stderr with an `error`, `code`, and `message` field.
 
 ## Commands
 
-### `fitui schema`
+### `fit schema`
 
 Returns the full database schema — every table with column names and types.
 
@@ -41,12 +41,12 @@ bun run packages/fit-tui/src/cli.ts schema
 }
 ```
 
-**Guardrail:** Always call `fitui schema` before writing any SQL query. Never guess
+**Guardrail:** Always call `fit schema` before writing any SQL query. Never guess
 column names — verify them from the schema first.
 
 ---
 
-### `fitui query --sql "<SQL>"`
+### `fit query --sql "<SQL>"`
 
 Executes a read-only SQL query against the database. Returns rows as a JSON array.
 Bigint values are coerced to numbers. Output is always JSON-serializable.
@@ -79,7 +79,7 @@ bun run packages/fit-tui/src/cli.ts query --sql "SELECT sport, count(*) AS n FRO
 
 ---
 
-### `fitui ingest <file.fit> [--dry-run]`
+### `fit ingest <file.fit> [--dry-run]`
 
 Imports a `.fit` file into the database. With `--dry-run`, validates and reports
 what would be imported without writing anything.
@@ -157,26 +157,26 @@ bun run packages/fit-tui/src/cli.ts ingest data/475490951656144900.fit
 ## Workflow: answering a question about activity data
 
 ```
-1. fitui schema                          # verify column names exist
-2. fitui query --sql "..."               # run targeted query with LIMIT
+1. fit schema                          # verify column names exist
+2. fit query --sql "..."               # run targeted query with LIMIT
 3. Interpret results and answer          # never re-query unnecessarily
 ```
 
 ## Workflow: ingesting a new file
 
 ```
-1. fitui ingest <file> --dry-run         # validate: check valid=true
-2. fitui ingest <file>                   # import: check status=imported
-3. fitui query --sql "SELECT id, recorded_at, sport FROM activities ORDER BY imported_at DESC LIMIT 1"
+1. fit ingest <file> --dry-run         # validate: check valid=true
+2. fit ingest <file>                   # import: check status=imported
+3. fit query --sql "SELECT id, recorded_at, sport FROM activities ORDER BY imported_at DESC LIMIT 1"
                                          # confirm it landed
 ```
 
 ---
 
-### `fitui view <file.fit> [--mode laps|raw|tree|protocol]`
+### `fit view <file.fit> [--mode laps|raw|tree|protocol]`
 
 Interactive TUI viewer for `.fit` files. **Requires a TTY (interactive terminal).**
-Agents running in non-TTY contexts will receive a `TTY_REQUIRED` error — use `fitui query`
+Agents running in non-TTY contexts will receive a `TTY_REQUIRED` error — use `fit query`
 to extract data programmatically instead.
 
 ```bash
@@ -200,7 +200,7 @@ bun run packages/fit-tui/src/cli.ts view data/475490951656144900.fit --mode raw
 
 **Guardrails:**
 - Do not call `view` from agent contexts — it takes over the terminal.
-- Use `fitui query` for programmatic data access instead.
+- Use `fit query` for programmatic data access instead.
 - Does not require a database connection — parses `.fit` files directly.
 
 ---

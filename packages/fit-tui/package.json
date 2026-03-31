@@ -32,7 +32,7 @@
     }
   },
   "bin": {
-    "fitui": "dist/cli.js"
+    "fit": "dist/cli.js"
   },
   "files": [
     "src",
