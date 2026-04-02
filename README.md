@@ -1,18 +1,30 @@
 # lunix_agents
 
-> structured cognition · agent-native workflows · queryable systems
-
-Lunix Agents is a modular system for turning raw data streams into structured, queryable intelligence — designed for both humans and autonomous agents.
+> autonomous systems · zero trust · recursive cognition
 
 ---
 
 ## Overview
 
-Ingest raw inputs → normalize → query → layer context.
+Lunix Agents is a modular system for building agent-native workflows on top of structured, queryable data.
 
-* **data layer** → structured storage (DuckDB)
-* **agent layer** → skills, reasoning, workflows
-* **context layer** → memory, goals, annotations
+Raw inputs are ingested, normalized, and extended with context — enabling both deterministic queries and adaptive reasoning loops.
+
+---
+
+## Capabilities
+
+**[01] Recursive Reasoning**
+Multi-layer cognitive loops refining outputs beyond surface-level inference.
+
+**[02] Stealth Protocol**
+Operates below observable thresholds. No trace. No residual state.
+
+**[03] Adaptive Mesh**
+Continuous recalibration from live input streams and feedback signals.
+
+**[04] Zero-Trust Core**
+All inputs validated. All outputs verified. No implicit trust.
 
 ---
 
@@ -31,62 +43,41 @@ lunix query --sql "
 
 ---
 
-## Library Usage
+## Core Logic
 
 ```ts
-import { createClient, setupDatabase } from "lunix"
+export function interact(h, input) {
+  h.memories.push({
+    content: input,
+    weight: Math.random(),
+    timestamp: Date.now()
+  });
 
-const client = await createClient("./lunix.db")
-await setupDatabase(client.conn)
+  const influence = h.memories.reduce((a, m) => a + m.weight, 0);
 
-// query, compute, extend
-client.close()
+  h.traits.curiosity += influence * 0.01;
+  h.traits.chaos += Math.random() * 0.05;
+  h.traits.stability += (1 - h.traits.chaos) * 0.02;
+
+  h.wallet -= 0.1;
+}
 ```
 
 ---
 
-## Agent Layer
-
-Agents operate through structured skills.
+## Architecture
 
 ```
 .agents/
 └── skills/
-    ├── data-ingest
-    ├── query-engine
-    ├── memory-layer
-    ├── context-builder
-    └── evolution-loop
-```
 
-Each skill defines:
-
-* commands
-* constraints
-* expected outputs
-
----
-
-## Context Layer
-
-Extend raw data with meaning:
-
-```ts
-setProfile(conn, { name: "athlete", max_hr: 206 })
-saveGoal(conn, { type: "race", distance: "5k" })
-recordThought(conn, "legs felt heavy, HR stable")
-```
-
----
-
-## System Architecture
-
-```
 packages/
 ├── core/        # ingestion, schema, queries
-├── agents/      # skill definitions + execution
-├── context/     # profiles, goals, memory
+├── agents/      # skill execution layer
+├── context/     # memory, goals, annotations
 └── cli/         # command interface
+
+data/
 ```
 
 ---
@@ -104,22 +95,47 @@ lunix schema
 
 ## Agent Skills
 
-| Skill     | Purpose                  |
-| --------- | ------------------------ |
-| ingest    | normalize raw inputs     |
-| query     | structured data access   |
-| context   | attach meaning to data   |
-| memory    | store and weight signals |
-| evolution | adapt over time          |
+| Skill     | Purpose                |
+| --------- | ---------------------- |
+| ingest    | normalize raw inputs   |
+| query     | structured data access |
+| context   | attach meaning         |
+| memory    | store + weight signals |
+| evolution | adaptive behavior      |
 
 ---
 
-## Design Principles
+## Metrics
 
-* **agent-first** — built for autonomous systems
-* **composable** — modular skill architecture
-* **queryable** — everything is inspectable
-* **deterministic core, adaptive edge**
+```
+COGNITION     97%
+STEALTH       100%
+ADAPTABILITY  89%
+PERSISTENCE   95%
+```
+
+---
+
+## Terminal
+
+```bash
+lunix@agent:~$ status
+
+AGENT_STATUS: operational
+UPTIME: ∞
+THREAT_LEVEL: null
+
+lunix@agent:~$
+```
+
+---
+
+## Signal
+
+```
+[ LUNIX AGENT ]
+always watching · always adapting
+```
 
 ---
 
@@ -131,24 +147,6 @@ cd lunix_agents
 pnpm install
 pnpm dev
 ```
-
----
-
-## Structure
-
-```
-.agents/
-└── skills/
-
-packages/
-data/
-```
-
----
-
-## Status
-
-active · modular · evolving
 
 ---
 
