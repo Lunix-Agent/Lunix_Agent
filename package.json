@@ -1,5 +1,5 @@
 {
-  "name": "fit-workspace",
+  "name": "Lunix-workspace",
   "type": "module",
   "private": true,
   "workspaces": [
@@ -11,6 +11,6 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "typescript": "^5"
+    "typescript": "^9"
   }
 }
