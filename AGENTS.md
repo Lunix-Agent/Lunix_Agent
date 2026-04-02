@@ -1,5 +1,13 @@
 # Lunix AGENTS
 
+lunix ingest morning-run.fit
+
+lunix query --sql "
+  SELECT sport, count(*) AS runs,
+    round(avg(total_distance_m / 1000), 1) AS avg_km
+  FROM sessions
+  GROUP BY sport
+"
 
 ---
 description: Use Bun instead of Node.js, npm, pnpm, or vite.
