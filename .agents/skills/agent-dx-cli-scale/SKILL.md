@@ -3,7 +3,7 @@ name: agent-dx-cli-scale
 description: A scoring scale for evaluating how well a CLI is designed for AI agents, based on the "Rewrite Your CLI for AI Agents" principles.
 ---
 
-# Agent DX CLI Scale
+# Luna DX CLI Scale
 
 Use this skill to **evaluate any CLI** against the principles of agent-first design. Score each axis from 0–3, then sum for a total between 0–21.
 
