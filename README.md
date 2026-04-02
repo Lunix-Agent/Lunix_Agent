@@ -1,169 +1,157 @@
-# fit
+# lunix_agents
 
-Turn Garmin `.fit` files into a queryable training database — then layer athlete context (thoughts, PRs, race goals) on top for AI coaching.
+> structured cognition · agent-native workflows · queryable systems
 
-## What it looks like
+Lunix Agents is a modular system for turning raw data streams into structured, queryable intelligence — designed for both humans and autonomous agents.
 
-Ingest a run from your watch and query it:
+---
+
+## Overview
+
+Ingest raw inputs → normalize → query → layer context.
+
+* **data layer** → structured storage (DuckDB)
+* **agent layer** → skills, reasoning, workflows
+* **context layer** → memory, goals, annotations
+
+---
+
+## Example
 
 ```bash
-fit ingest morning-run.fit
-fit query --sql "
+lunix ingest morning-run.fit
+
+lunix query --sql "
   SELECT sport, count(*) AS runs,
-    round(avg(total_distance_m / 1000), 1) AS avg_km,
-    round(avg(avg_pace_min_per_km), 2) AS avg_pace
+    round(avg(total_distance_m / 1000), 1) AS avg_km
   FROM sessions
-  WHERE sport = 'running'
   GROUP BY sport
 "
 ```
 
-```json
-[{"sport":"running","runs":545,"avg_km":7.2,"avg_pace":4.89}]
-```
+---
 
-Browse a `.fit` file interactively in the terminal:
+## Library Usage
 
-```bash
-fit view morning-run.fit
-fit view morning-run.fit --mode protocol
-```
+```ts
+import { createClient, setupDatabase } from "lunix"
 
-Use the library from code:
-
-```typescript
-import { createClient, setupDatabase, weeklyLoad, recentForm } from "@_davideast/fit"
-
-const client = await createClient("./fit.duckdb")
+const client = await createClient("./lunix.db")
 await setupDatabase(client.conn)
 
-const weekly = await weeklyLoad(client.conn)   // distance/pace/HR by week
-const form = await recentForm(client.conn)     // 7d and 28d rolling averages
-console.log(weekly, form)
-
+// query, compute, extend
 client.close()
 ```
 
-Add athlete context — journal entries, personal records, target races:
+---
 
-```typescript
-import { setupDatabase } from "fit-coaching"
-import {
-  setAthleteProfile,
-  savePersonalRecord,
-  saveTargetRace,
-  recordAthleteThoughts,
-} from "fit-coaching"
+## Agent Layer
 
-await setAthleteProfile(conn, { name: "David East", max_hr: 206, resting_hr: 58 })
-await savePersonalRecord(conn, { distance: "5k", time_s: 1098, set_date: "2025-11-05" })
-await saveTargetRace(conn, {
-  name: "Cherry Blossom 5k",
-  race_date: "2026-04-11",
-  distance: "5k",
-  priority: "A",
-  goal_time_s: 1080,
-  goal_type: "time",
-})
-await recordAthleteThoughts(conn, "2026-03-30",
-  "Easy 5 miler today. Legs felt heavy from yesterday's track session but HR stayed low."
-)
-```
-
-## What's in the box
-
-This is a monorepo with two packages:
-
-| Package | npm name | Purpose |
-|---------|----------|---------|
-| `packages/fit-tui` | `@_davideast/fit` | FIT file parsing, DuckDB storage, query functions, CLI, TUI viewer |
-| `packages/coaching` | `fit-coaching` (private) | Athlete profile, PRs, target races, journal entries, observations |
-
-**fit** is the standalone library. It handles the activity data layer — parsing `.fit` files, storing sessions/laps/records in DuckDB, and querying them. It works on Bun and Node.js.
-
-**fit-coaching** extends fit with athlete context. It imports and re-exports everything from fit, then adds coaching-specific tables and queries. It's private to this workspace — not published to npm.
+Agents operate through structured skills.
 
 ```
-fit (activity data)          fit-coaching (athlete context)
-├── activities                 ├── re-exports all fit queries
-├── sessions                   ├── entries (journal)
-├── laps                       ├── observations (extracted facts)
-├── records (per-second)       ├── athlete (profile)
-├── hr_zones                   ├── personal_records
-└── 9 query functions          ├── target_races
-                               └── 13 coaching query functions
+.agents/
+└── skills/
+    ├── data-ingest
+    ├── query-engine
+    ├── memory-layer
+    ├── context-builder
+    └── evolution-loop
 ```
+
+Each skill defines:
+
+* commands
+* constraints
+* expected outputs
+
+---
+
+## Context Layer
+
+Extend raw data with meaning:
+
+```ts
+setProfile(conn, { name: "athlete", max_hr: 206 })
+saveGoal(conn, { type: "race", distance: "5k" })
+recordThought(conn, "legs felt heavy, HR stable")
+```
+
+---
+
+## System Architecture
+
+```
+packages/
+├── core/        # ingestion, schema, queries
+├── agents/      # skill definitions + execution
+├── context/     # profiles, goals, memory
+└── cli/         # command interface
+```
+
+---
+
+## CLI
+
+```bash
+lunix ingest <file>
+lunix query --sql "<query>"
+lunix view <file>
+lunix schema
+```
+
+---
+
+## Agent Skills
+
+| Skill     | Purpose                  |
+| --------- | ------------------------ |
+| ingest    | normalize raw inputs     |
+| query     | structured data access   |
+| context   | attach meaning to data   |
+| memory    | store and weight signals |
+| evolution | adapt over time          |
+
+---
+
+## Design Principles
+
+* **agent-first** — built for autonomous systems
+* **composable** — modular skill architecture
+* **queryable** — everything is inspectable
+* **deterministic core, adaptive edge**
+
+---
 
 ## Setup
 
 ```bash
-git clone git@github.com:davideast/fit.git
-cd fit
-bun install
+git clone <repo>
+cd lunix_agents
+pnpm install
+pnpm dev
 ```
 
-Import your `.fit` files:
+---
 
-```bash
-fit --db data/fit.duckdb ingest data/your-run.fit
-```
-
-Or point at a directory:
-
-```bash
-bun run packages/fit-tui/src/db/ingest.ts data/
-```
-
-Run tests:
-
-```bash
-bun test --cwd packages/fit-tui     # 31 tests
-bun test --cwd packages/coaching    # 6 tests
-```
-
-## CLI
-
-The `fit` CLI works on both Bun and Node.js. Full reference in [packages/fit-tui/README.md](packages/fit-tui/README.md).
-
-```bash
-fit schema                                          # database schema as JSON
-fit query --sql "SELECT * FROM sessions LIMIT 5"    # read-only SQL
-fit ingest run.fit --dry-run                         # validate without importing
-fit ingest run.fit                                   # import to database
-fit view run.fit                                     # interactive TUI (Bun only)
-fit view run.fit --mode raw                          # flat message explorer
-```
-
-Use `--db <path>` or `FIT_DB_PATH` env var to specify the database location. Default: `./fit.duckdb`.
-
-## Agent skills
-
-The `.agents/skills/` directory contains structured knowledge for AI coding agents:
-
-| Skill | What it does |
-|-------|-------------|
-| `fit` | CLI command reference, guardrails, error codes |
-| `athlete-profile` | Save profile details, PRs, and target races |
-| `record-athlete-thoughts` | Extract observations from free-form journal entries |
-| `tdd-red-green-refactor` | TDD workflow for this project |
-| `agent-dx-cli-scale` | CLI design scoring for agent-friendliness |
-
-## Project layout
+## Structure
 
 ```
-├── packages/
-│   ├── fit-tui/            # fit library + CLI
-│   │   ├── src/
-│   │   │   ├── db/         # schema, queries, client, ingest
-│   │   │   ├── cli/        # schema, query, ingest, view commands
-│   │   │   ├── tui/        # interactive viewers (OpenTUI/React)
-│   │   │   └── compat.ts   # node:fs/node:crypto wrappers
-│   │   └── tests/
-│   └── coaching/           # fit-coaching extension
-│       ├── src/db/         # coaching schema + queries
-│       └── tests/
-├── .agents/skills/         # agent knowledge files
-├── data/                   # .fit files and fit.duckdb (gitignored)
-├── DATABASE.md             # schema reference
-└── AGENTS.md               # agent conventions
+.agents/
+└── skills/
+
+packages/
+data/
 ```
+
+---
+
+## Status
+
+active · modular · evolving
+
+---
+
+## License
+
+MIT
